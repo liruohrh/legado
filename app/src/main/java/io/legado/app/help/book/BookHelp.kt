@@ -11,6 +11,8 @@ import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.BookSource
 import io.legado.app.help.config.AppConfig
+import io.legado.app.help.coroutine.Coroutine
+import io.legado.app.model.ReadBook
 import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.localBook.LocalBook
 import io.legado.app.utils.ArchiveUtils
@@ -124,7 +126,9 @@ object BookHelp {
     ) {
         try {
             saveText(book, bookChapter, content)
-            saveImages(bookSource, book, bookChapter, content)
+            Coroutine.async(scope = ReadBook.downloadScope) {
+                saveImages(bookSource, book, bookChapter, content)
+            }.start()
             postEvent(EventBus.SAVE_CONTENT, Pair(book, bookChapter))
         } catch (e: Exception) {
             e.printStackTrace()
@@ -217,6 +221,23 @@ object BookHelp {
             "${MD5Utils.md5Encode16(src)}.${getImageSuffix(src)}"
         )
     }
+
+    suspend fun getAnyImage(book: Book): File {
+        val imageDir = downloadDir.getFile(
+            cacheFolderName,
+            book.getFolderName(),
+            cacheImageFolderName
+        )
+        while (true) {
+            val listFiles = imageDir.listFiles()
+            if (listFiles == null || listFiles.isEmpty()) {
+                delay(1 * 1000)
+            } else {
+                return listFiles[0]
+            }
+        }
+    }
+
 
     fun getImageSuffix(src: String): String {
         return UrlUtil.getSuffix(src, "jpg")

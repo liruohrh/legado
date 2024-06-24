@@ -154,6 +154,33 @@ object ImageProvider {
     }
 
     /**
+     * <p>
+     * 从章节缓存中任取一张作为ImageSize
+     * <p>
+     * 注意：可能在大小不太一样时有一点点问题？不太知道，因为没怎么看明白 {@link io.legado.app.ui.book.read.page.provider.ChapterProvider.getTextChapter}
+     * <p>
+     *     但是应该不会怎么样
+     */
+    suspend fun getAnyImageSize(
+        book: Book
+    ): Size {
+        val file =  BookHelp.getAnyImage(book)
+        val op = BitmapFactory.Options()
+        // inJustDecodeBounds如果设置为true,仅仅返回图片实际的宽和高,宽和高是赋值给opts.outWidth,opts.outHeight;
+        op.inJustDecodeBounds = true
+        BitmapFactory.decodeFile(file.absolutePath, op)
+        if (op.outWidth < 1 && op.outHeight < 1) {
+            //svg size
+            val size = SvgUtils.getSize(file.absolutePath)
+            if (size != null) return size
+            putDebug("ImageProvider: $file Unsupported image type")
+            //file.delete() 重复下载
+            return Size(errorBitmap.width, errorBitmap.height)
+        }
+        return Size(op.outWidth, op.outHeight)
+    }
+
+    /**
      *获取bitmap 使用LruCache缓存
      */
     fun getImage(

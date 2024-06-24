@@ -8,6 +8,7 @@ import android.os.Build
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
+import android.util.Size
 import io.legado.app.constant.AppPattern
 import io.legado.app.constant.EventBus
 import io.legado.app.data.entities.Book
@@ -145,6 +146,7 @@ object ChapterProvider {
         displayTitle: String,
         bookContent: BookContent,
         chapterSize: Int,
+        anyImageSize: Boolean = false
     ): TextChapter {
         val contents = bookContent.textList
         val textPages = arrayListOf<TextPage>()
@@ -173,6 +175,7 @@ object ChapterProvider {
             }
             durY += titleBottomSpacing
         }
+        val imageSize = if(anyImageSize) ImageProvider.getAnyImageSize(book) else null
         contents.forEach { content ->
             if (book.getImageStyle().equals(Book.imgStyleText, true)) {
                 //图片样式为文字嵌入类型
@@ -226,7 +229,8 @@ object ChapterProvider {
                     }
                     durY = setTypeImage(
                         book, matcher.group(1)!!,
-                        absStartX, durY, textPages, stringBuilder, book.getImageStyle()
+                        absStartX, durY, textPages, stringBuilder, book.getImageStyle(),
+                        imageSize = imageSize
                     )
                     start = matcher.end()
                 }
@@ -282,9 +286,10 @@ object ChapterProvider {
         textPages: ArrayList<TextPage>,
         stringBuilder: StringBuilder,
         imageStyle: String?,
+        imageSize: Size? = null
     ): Float {
         var durY = y
-        val size = ImageProvider.getImageSize(book, src, ReadBook.bookSource)
+        val size = imageSize ?: ImageProvider.getImageSize(book, src, ReadBook.bookSource)
         if (size.width > 0 && size.height > 0) {
             if (durY > visibleHeight) {
                 val textPage = textPages.last()

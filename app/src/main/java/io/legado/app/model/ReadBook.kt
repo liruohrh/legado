@@ -465,7 +465,7 @@ object ReadBook : CoroutineScope by MainScope() {
             val contents = contentProcessor
                 .getContent(book, chapter, content, includeTitle = false)
             val textChapter = ChapterProvider
-                .getTextChapter(book, chapter, displayTitle, contents, chapterSize)
+                .getTextChapter(book, chapter, displayTitle, contents, chapterSize, anyImageSize = true)
             when (val offset = chapter.index - durChapterIndex) {
                 0 -> {
                     curTextChapter = textChapter
