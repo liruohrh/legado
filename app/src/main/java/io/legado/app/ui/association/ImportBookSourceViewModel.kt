@@ -19,6 +19,7 @@ import io.legado.app.help.http.okHttpClient
 import io.legado.app.help.http.unCompress
 import io.legado.app.help.source.SourceHelp
 import io.legado.app.utils.GSON
+import io.legado.app.utils.UrlUtil
 import io.legado.app.utils.fromJsonArray
 import io.legado.app.utils.fromJsonObject
 import io.legado.app.utils.inputStream
@@ -165,7 +166,7 @@ class ImportBookSourceViewModel(app: Application) : BaseViewModel(app) {
                 mText.isUri() -> {
                     val uri = Uri.parse(mText)
                     uri.inputStream(context).getOrThrow().use { inputS ->
-                        GSON.fromJsonArray<BookSource>(inputS).getOrThrow().let {
+                        GSON.fromJsonArray<BookSource>(UrlUtil.decodeContent(mText, inputS)).getOrThrow().let {
                             val source = it.firstOrNull() ?: return@let
                             if (source.bookSourceUrl.isEmpty()) {
                                 throw NoStackTraceException("不是书源")
@@ -194,7 +195,7 @@ class ImportBookSourceViewModel(app: Application) : BaseViewModel(app) {
                 url(url)
             }
         }.unCompress {
-            GSON.fromJsonArray<BookSource>(it).getOrThrow().let { list ->
+            GSON.fromJsonArray<BookSource>(UrlUtil.decodeContent(url, it)).getOrThrow().let { list ->
                 val source = list.firstOrNull() ?: return@let
                 if (source.bookSourceUrl.isEmpty()) {
                     throw NoStackTraceException("不是书源")

@@ -1,16 +1,42 @@
 package io.legado.app.utils
 
+import androidx.core.net.toUri
+import cn.hutool.core.codec.Base64
+import cn.hutool.core.util.HexUtil
 import io.legado.app.BuildConfig
 import io.legado.app.constant.AppLog
 import io.legado.app.constant.AppPattern.semicolonRegex
 import io.legado.app.help.config.AppConfig
 import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.analyzeRule.CustomUrl
+import java.io.ByteArrayInputStream
+import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLDecoder
 
 object UrlUtil {
+
+    /**
+     * 解析编码的uri body，根据uri最后的part判断编码类型
+     * @param uri [https|http|file]://[example.com|/]/path/to/bookSource.[hex|base16|base64].[txt|json]
+     */
+    fun decodeContent(uri: String, content: InputStream): InputStream{
+        val filename = uri.toUri().path!!.substringAfterLast("/")
+        val nameParts = filename.split(".")
+        if(nameParts.size < 3){
+            return content
+        }
+        val bytes = content.readBytes()
+        if(bytes.isEmpty()){
+            return ByteArrayInputStream(bytes)
+        }
+        return when(nameParts[nameParts.size-2].lowercase()){
+            "hex", "base16" -> ByteArrayInputStream(HexUtil.decodeHex(bytes.decodeToString()))
+            "base64" -> ByteArrayInputStream(Base64.decode(bytes))
+            else -> content
+        }
+    }
 
     // 有时候文件名在query里，截取path会截到其他内容
     // https://www.example.com/download.php?filename=文件.txt
