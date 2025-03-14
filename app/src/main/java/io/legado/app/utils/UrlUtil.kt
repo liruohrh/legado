@@ -1,39 +1,37 @@
 package io.legado.app.utils
 
 import androidx.core.net.toUri
-import cn.hutool.core.codec.Base64
-import cn.hutool.core.util.HexUtil
 import io.legado.app.BuildConfig
 import io.legado.app.constant.AppLog
 import io.legado.app.constant.AppPattern.semicolonRegex
 import io.legado.app.help.config.AppConfig
 import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.analyzeRule.CustomUrl
-import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLDecoder
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
+import kotlin.io.encoding.decodingWith
 
 object UrlUtil {
 
     /**
-     * 解析编码的uri body，根据uri最后的part判断编码类型
+     * - 解析编码的uri body，根据uri最后的part判断编码类型。
+     * - 为解码大文件，使用流式解码。
      * @param uri [https|http|file]://[example.com|/]/path/to/bookSource.[hex|base16|base64].[txt|json]
      */
+    @OptIn(ExperimentalEncodingApi::class)
     fun decodeContent(uri: String, content: InputStream): InputStream{
         val filename = uri.toUri().path!!.substringAfterLast("/")
         val nameParts = filename.split(".")
         if(nameParts.size < 3){
             return content
         }
-        val bytes = content.readBytes()
-        if(bytes.isEmpty()){
-            return ByteArrayInputStream(bytes)
-        }
         return when(nameParts[nameParts.size-2].lowercase()){
-            "hex", "base16" -> ByteArrayInputStream(HexUtil.decodeHex(bytes.decodeToString()))
-            "base64" -> ByteArrayInputStream(Base64.decode(bytes))
+            "hex", "base16" -> content.deHex()
+            "base64" -> content.decodingWith(Base64.Mime)
             else -> content
         }
     }
